@@ -31,7 +31,7 @@ export function CtaButtons({ variant = "light", className }: CtaButtonsProps) {
       )}
     >
       <Button size="lg" className={cn(isDark ? primaryOnDarkClass : primaryClass)} asChild>
-        <a href="#cta">
+        <a href="/audit">
           Start Free Audit
           <ArrowRight className="size-5" aria-hidden />
         </a>
@@ -42,7 +42,7 @@ export function CtaButtons({ variant = "light", className }: CtaButtonsProps) {
         className={cn(isDark ? secondaryOnDarkClass : secondaryClass)}
         asChild
       >
-        <a href="#demo">
+        <a href="/results?demo=1">
           <Play className="size-5" aria-hidden />
           See Demo
         </a>
