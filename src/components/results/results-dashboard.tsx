@@ -10,7 +10,9 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { AuditAiSummary } from "@/components/results/audit-ai-summary";
 import { RecommendationCard } from "@/components/results/recommendation-card";
+import { ResultsSection } from "@/components/results/results-section";
 import {
   DarkPanel,
   PlanCard,
@@ -25,8 +27,9 @@ import type { AuditResult } from "@/types/audit";
 
 function ResultsSkeleton() {
   return (
-    <div className="space-y-6">
-      <Skeleton className="h-48 w-full rounded-2xl" />
+    <div className="space-y-10">
+      <Skeleton className="h-52 w-full rounded-2xl" />
+      <Skeleton className="h-44 w-full rounded-2xl" />
       <Skeleton className="h-36 w-full rounded-2xl" />
       <Skeleton className="h-72 w-full rounded-2xl" />
     </div>
@@ -83,22 +86,26 @@ export function ResultsDashboard() {
   const invalid = result.recommendations.filter((r) => r.inputInvalid);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-10">
       <DarkPanel className="p-8 sm:p-10">
         <div className="flex flex-wrap items-center gap-2">
           <p className="text-xs font-semibold tracking-[0.14em] text-credex-dark-foreground/50 uppercase">
-            Audit summary
+            Audit snapshot
           </p>
           <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-xs text-credex-dark-foreground/70">
             <ShieldCheck className="size-3" aria-hidden />
-            Rule-based analysis
+            Engine-verified figures
           </span>
         </div>
-        <p className="mt-4 text-lg leading-relaxed text-credex-dark-foreground/85">
+        <p className="mt-4 text-base leading-relaxed text-credex-dark-foreground/80 sm:text-lg">
           {result.summaryMessage}
         </p>
 
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <SummaryStat
+            label="Monthly spend"
+            value={formatCurrency(result.totalCurrentSpend)}
+          />
           <SummaryStat
             label="Monthly savings"
             value={
@@ -124,10 +131,6 @@ export function ResultsDashboard() {
                 : formatPercent(result.savingsRatePercent)
             }
           />
-          <SummaryStat
-            label="Tools audited"
-            value={String(result.toolsAudited)}
-          />
         </div>
 
         {result.isAlreadyOptimized ? (
@@ -136,8 +139,15 @@ export function ResultsDashboard() {
             You&apos;re already spending efficiently — no material changes
             recommended.
           </p>
-        ) : null}
+        ) : (
+          <p className="mt-6 text-sm text-credex-dark-foreground/65">
+            {result.optimizableToolCount} of {result.toolsAudited} tools have
+            actionable optimizations below.
+          </p>
+        )}
       </DarkPanel>
+
+      <AuditAiSummary audit={result} />
 
       {result.inputWarnings.length > 0 || result.invalidToolCount > 0 ? (
         <PlanCard className="border-amber-200/80 bg-amber-50/40 p-5 sm:p-6">
@@ -153,37 +163,12 @@ export function ResultsDashboard() {
         </PlanCard>
       ) : null}
 
-      {result.stackOverlaps.length > 0 ? (
-        <PlanCard className="p-6 sm:p-8">
-          <div className="flex items-center gap-2">
-            <Layers className="size-5 text-credex-green" aria-hidden />
-            <h2 className="text-lg font-bold">Stack overlap detected</h2>
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            These categories may be redundant — consolidation often saves more
-            than any single tier change.
-          </p>
-          <ul className="mt-5 space-y-4">
-            {result.stackOverlaps.map((overlap) => (
-              <li
-                key={overlap.groupId}
-                className="rounded-xl border border-neutral-100 bg-muted/30 p-4"
-              >
-                <p className="font-medium">{overlap.label}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {overlap.toolNames.join(" · ")} ·{" "}
-                  {formatCurrency(overlap.combinedSpend)}/mo combined
-                </p>
-                <p className="mt-2 text-sm leading-relaxed">{overlap.message}</p>
-              </li>
-            ))}
-          </ul>
-        </PlanCard>
-      ) : null}
-
       <PlanCard className="p-6 sm:p-8">
         <h2 className="text-lg font-bold">Financial overview</h2>
-        <div className="mt-4 divide-y divide-neutral-100">
+        <p className="mt-1 text-sm text-muted-foreground">
+          All amounts from your submitted audit inputs
+        </p>
+        <div className="mt-5 divide-y divide-neutral-100 rounded-xl border border-neutral-100 bg-muted/20 px-4">
           <PlanRow
             label="Current monthly spend"
             value={formatCurrency(result.totalCurrentSpend)}
@@ -210,68 +195,87 @@ export function ResultsDashboard() {
         </div>
       </PlanCard>
 
-      {actionable.length > 0 ? (
-        <section className="space-y-5">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight">
-              Recommended changes
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Prioritized by estimated monthly impact
-            </p>
+      {result.stackOverlaps.length > 0 ? (
+        <PlanCard className="p-6 sm:p-8">
+          <div className="flex items-center gap-2">
+            <Layers className="size-5 text-credex-green" aria-hidden />
+            <h2 className="text-lg font-bold">Stack overlap</h2>
           </div>
-          {actionable.map((rec, index) => (
-            <RecommendationCard
-              key={`${rec.toolId}-action-${index}`}
-              recommendation={rec}
-            />
-          ))}
-        </section>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Redundant categories — consolidation may outperform single-tier
+            changes.
+          </p>
+          <ul className="mt-5 space-y-4">
+            {result.stackOverlaps.map((overlap) => (
+              <li
+                key={overlap.groupId}
+                className="rounded-xl border border-neutral-100 bg-muted/30 p-4"
+              >
+                <p className="font-medium">{overlap.label}</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {overlap.toolNames.join(" · ")} ·{" "}
+                  {formatCurrency(overlap.combinedSpend)}/mo combined
+                </p>
+                <p className="mt-2 text-sm leading-relaxed">{overlap.message}</p>
+              </li>
+            ))}
+          </ul>
+        </PlanCard>
+      ) : null}
+
+      {actionable.length > 0 ? (
+        <ResultsSection
+          title="Recommended changes"
+          description="Prioritized by estimated monthly impact from the audit engine"
+        >
+          <div className="space-y-5">
+            {actionable.map((rec, index) => (
+              <RecommendationCard
+                key={`${rec.toolId}-action-${index}`}
+                recommendation={rec}
+              />
+            ))}
+          </div>
+        </ResultsSection>
       ) : null}
 
       {invalid.length > 0 ? (
-        <section className="space-y-5">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight">
-              Needs review
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Invalid or incomplete inputs — no savings estimated for these lines
-            </p>
+        <ResultsSection
+          title="Needs review"
+          description="Invalid or incomplete inputs — no savings estimated"
+        >
+          <div className="space-y-5">
+            {invalid.map((rec, index) => (
+              <RecommendationCard
+                key={`${rec.toolId}-invalid-${index}`}
+                recommendation={rec}
+              />
+            ))}
           </div>
-          {invalid.map((rec, index) => (
-            <RecommendationCard
-              key={`${rec.toolId}-invalid-${index}`}
-              recommendation={rec}
-            />
-          ))}
-        </section>
+        </ResultsSection>
       ) : null}
 
       {optimized.length > 0 ? (
-        <section className="space-y-5">
-          <div>
-            <h2 className="text-xl font-bold tracking-tight">
-              Already efficient
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              No meaningful savings from tier changes on these lines
-            </p>
+        <ResultsSection
+          title="Already efficient"
+          description="No meaningful savings from tier changes on these lines"
+        >
+          <div className="space-y-5">
+            {optimized.map((rec, index) => (
+              <RecommendationCard
+                key={`${rec.toolId}-opt-${index}`}
+                recommendation={rec}
+              />
+            ))}
           </div>
-          {optimized.map((rec, index) => (
-            <RecommendationCard
-              key={`${rec.toolId}-opt-${index}`}
-              recommendation={rec}
-            />
-          ))}
-        </section>
+        </ResultsSection>
       ) : null}
 
-      <p className="text-center text-xs leading-relaxed text-muted-foreground">
+      <p className="rounded-xl border border-neutral-100 bg-muted/30 px-5 py-4 text-center text-xs leading-relaxed text-muted-foreground">
         {result.trustNote}
       </p>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+      <div className="flex flex-col gap-3 border-t border-neutral-100 pt-8 sm:flex-row sm:justify-center">
         <Button
           className="h-12 rounded-xl bg-neutral-900 px-8 text-base font-semibold text-white"
           asChild
@@ -303,7 +307,7 @@ function SummaryStat({
   accent?: boolean;
 }) {
   return (
-    <div>
+    <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
       <p className="text-sm text-credex-dark-foreground/60">{label}</p>
       <p
         className={
