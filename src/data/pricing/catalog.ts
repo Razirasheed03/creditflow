@@ -1,36 +1,11 @@
-import type { PrimaryUseCase, SupportedToolId } from "@/types/audit";
+import type { SupportedToolId } from "@/types/audit";
 
-export type BillingModel = "flat" | "per_seat" | "usage";
-
-export type PricingTier = {
-  id: string;
-  name: string;
-  billingModel: BillingModel;
-  /** Flat monthly price when billingModel is flat */
-  monthlyBase?: number;
-  /** Per-seat monthly when billingModel is per_seat */
-  pricePerSeat?: number;
-  minSeats?: number;
-  maxSeats?: number;
-  /** Typical monthly spend hint for usage-based tiers */
-  typicalMonthlyRange?: [number, number];
-  bestForTeamSize?: [number, number];
-  bestForUseCases?: PrimaryUseCase[];
-  notes?: string;
-};
-
-export type ToolPricing = {
-  id: SupportedToolId;
-  displayName: string;
-  category: "ide" | "assistant" | "api";
-  tiers: PricingTier[];
-  planAliases: Record<string, string>;
-};
+import type { ToolPricing } from "./types";
 
 const alias = (...keys: [string, string][]) =>
   Object.fromEntries(keys) as Record<string, string>;
 
-export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
+export const TOOL_CATALOG: Record<SupportedToolId, ToolPricing> = {
   cursor: {
     id: "cursor",
     displayName: "Cursor",
@@ -41,11 +16,19 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
       ["enterprise", "enterprise"],
       ["hobby", "hobby"]
     ),
+    alternatives: [
+      {
+        name: "GitHub Copilot Individual",
+        condition: "VS Code–centric workflows without Cursor-specific features",
+        monthlyHint: "~$10/seat",
+      },
+    ],
     tiers: [
       {
         id: "hobby",
         name: "Hobby",
         billingModel: "flat",
+        tierClass: "free",
         monthlyBase: 0,
         bestForTeamSize: [1, 1],
         bestForUseCases: ["coding"],
@@ -54,25 +37,26 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "pro",
         name: "Pro",
         billingModel: "per_seat",
+        tierClass: "individual",
         pricePerSeat: 20,
         bestForTeamSize: [1, 8],
         bestForUseCases: ["coding", "mixed"],
-        notes: "Individual power users and small eng pods.",
       },
       {
         id: "business",
         name: "Business",
         billingModel: "per_seat",
+        tierClass: "team",
         pricePerSeat: 40,
         minSeats: 2,
         bestForTeamSize: [8, 50],
         bestForUseCases: ["coding"],
-        notes: "Centralized billing and admin controls.",
       },
       {
         id: "enterprise",
         name: "Enterprise",
         billingModel: "per_seat",
+        tierClass: "enterprise",
         pricePerSeat: 60,
         minSeats: 10,
         bestForTeamSize: [25, 500],
@@ -93,6 +77,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "individual",
         name: "Individual",
         billingModel: "per_seat",
+        tierClass: "individual",
         pricePerSeat: 10,
         bestForTeamSize: [1, 3],
         bestForUseCases: ["coding"],
@@ -101,6 +86,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "business",
         name: "Business",
         billingModel: "per_seat",
+        tierClass: "team",
         pricePerSeat: 19,
         minSeats: 1,
         bestForTeamSize: [4, 100],
@@ -110,6 +96,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "enterprise",
         name: "Enterprise",
         billingModel: "per_seat",
+        tierClass: "enterprise",
         pricePerSeat: 39,
         minSeats: 50,
         bestForTeamSize: [50, 500],
@@ -125,21 +112,34 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
       ["pro", "pro"],
       ["team", "team"],
       ["max", "max"],
-      ["enterprise", "enterprise"]
+      ["enterprise", "enterprise"],
+      ["api", "api_direct"],
+      ["api_direct", "api_direct"]
     ),
     tiers: [
+      {
+        id: "free",
+        name: "Free",
+        billingModel: "flat",
+        tierClass: "free",
+        monthlyBase: 0,
+        bestForTeamSize: [1, 1],
+        bestForUseCases: ["writing", "research"],
+      },
       {
         id: "pro",
         name: "Pro",
         billingModel: "per_seat",
+        tierClass: "individual",
         pricePerSeat: 20,
         bestForTeamSize: [1, 5],
-        bestForUseCases: ["writing", "research", "mixed"],
+        bestForUseCases: ["writing", "research", "mixed", "coding"],
       },
       {
         id: "team",
         name: "Team",
         billingModel: "per_seat",
+        tierClass: "team",
         pricePerSeat: 30,
         minSeats: 2,
         bestForTeamSize: [5, 40],
@@ -149,17 +149,28 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "max",
         name: "Max",
         billingModel: "per_seat",
+        tierClass: "individual",
         pricePerSeat: 100,
-        bestForTeamSize: [1, 10],
+        bestForTeamSize: [1, 3],
         bestForUseCases: ["research", "data_analysis"],
       },
       {
         id: "enterprise",
         name: "Enterprise",
         billingModel: "per_seat",
+        tierClass: "enterprise",
         pricePerSeat: 50,
         minSeats: 10,
         bestForTeamSize: [20, 500],
+      },
+      {
+        id: "api_direct",
+        name: "API Direct",
+        billingModel: "usage",
+        tierClass: "usage",
+        typicalMonthlyRange: [100, 8000],
+        bestForTeamSize: [1, 100],
+        bestForUseCases: ["coding", "data_analysis", "mixed"],
       },
     ],
   },
@@ -171,13 +182,16 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
       ["plus", "plus"],
       ["team", "team"],
       ["enterprise", "enterprise"],
-      ["free", "free"]
+      ["free", "free"],
+      ["api", "api_direct"],
+      ["api_direct", "api_direct"]
     ),
     tiers: [
       {
         id: "plus",
         name: "Plus",
         billingModel: "per_seat",
+        tierClass: "individual",
         pricePerSeat: 20,
         bestForTeamSize: [1, 5],
         bestForUseCases: ["writing", "mixed", "coding"],
@@ -186,6 +200,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "team",
         name: "Team",
         billingModel: "per_seat",
+        tierClass: "team",
         pricePerSeat: 30,
         minSeats: 2,
         bestForTeamSize: [5, 50],
@@ -195,9 +210,19 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "enterprise",
         name: "Enterprise",
         billingModel: "per_seat",
+        tierClass: "enterprise",
         pricePerSeat: 60,
         minSeats: 10,
         bestForTeamSize: [25, 500],
+      },
+      {
+        id: "api_direct",
+        name: "API Direct",
+        billingModel: "usage",
+        tierClass: "usage",
+        typicalMonthlyRange: [150, 10000],
+        bestForTeamSize: [1, 200],
+        bestForUseCases: ["coding", "mixed", "data_analysis"],
       },
     ],
   },
@@ -218,6 +243,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "pay_as_you_go",
         name: "Pay-as-you-go",
         billingModel: "usage",
+        tierClass: "usage",
         typicalMonthlyRange: [50, 800],
         bestForTeamSize: [1, 20],
         bestForUseCases: ["coding", "data_analysis"],
@@ -226,6 +252,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "tier_2",
         name: "Usage Tier 2",
         billingModel: "usage",
+        tierClass: "usage",
         typicalMonthlyRange: [500, 2500],
         bestForTeamSize: [5, 50],
       },
@@ -233,6 +260,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "scale",
         name: "Scale / Committed",
         billingModel: "usage",
+        tierClass: "enterprise",
         typicalMonthlyRange: [2000, 15000],
         bestForTeamSize: [20, 500],
       },
@@ -254,6 +282,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "pay_as_you_go",
         name: "Pay-as-you-go",
         billingModel: "usage",
+        tierClass: "usage",
         typicalMonthlyRange: [50, 1000],
         bestForTeamSize: [1, 25],
         bestForUseCases: ["coding", "data_analysis", "mixed"],
@@ -262,6 +291,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "tier_2",
         name: "Usage Tier 2",
         billingModel: "usage",
+        tierClass: "usage",
         typicalMonthlyRange: [400, 3000],
         bestForTeamSize: [5, 60],
       },
@@ -269,6 +299,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "scale",
         name: "Scale / Committed",
         billingModel: "usage",
+        tierClass: "enterprise",
         typicalMonthlyRange: [2500, 20000],
         bestForTeamSize: [15, 500],
       },
@@ -280,35 +311,40 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
     category: "assistant",
     planAliases: alias(
       ["free", "free"],
-      ["advanced", "advanced"],
-      ["business", "business"],
-      ["enterprise", "enterprise"]
+      ["pro", "pro"],
+      ["advanced", "pro"],
+      ["ultra", "ultra"],
+      ["api", "api"],
+      ["business", "pro"],
+      ["enterprise", "ultra"]
     ),
     tiers: [
       {
-        id: "advanced",
-        name: "Advanced",
+        id: "pro",
+        name: "Pro",
         billingModel: "per_seat",
+        tierClass: "individual",
         pricePerSeat: 20,
         bestForTeamSize: [1, 5],
         bestForUseCases: ["research", "mixed", "writing"],
       },
       {
-        id: "business",
-        name: "Business",
+        id: "ultra",
+        name: "Ultra",
         billingModel: "per_seat",
-        pricePerSeat: 30,
-        minSeats: 2,
-        bestForTeamSize: [5, 80],
-        bestForUseCases: ["mixed", "research"],
+        tierClass: "individual",
+        pricePerSeat: 35,
+        bestForTeamSize: [1, 8],
+        bestForUseCases: ["research", "data_analysis", "mixed"],
       },
       {
-        id: "enterprise",
-        name: "Enterprise",
-        billingModel: "per_seat",
-        pricePerSeat: 50,
-        minSeats: 10,
-        bestForTeamSize: [20, 500],
+        id: "api",
+        name: "API",
+        billingModel: "usage",
+        tierClass: "usage",
+        typicalMonthlyRange: [50, 5000],
+        bestForTeamSize: [1, 100],
+        bestForUseCases: ["coding", "data_analysis", "mixed"],
       },
     ],
   },
@@ -327,6 +363,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "pro",
         name: "Pro",
         billingModel: "per_seat",
+        tierClass: "individual",
         pricePerSeat: 15,
         bestForTeamSize: [1, 6],
         bestForUseCases: ["coding"],
@@ -335,6 +372,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "teams",
         name: "Teams",
         billingModel: "per_seat",
+        tierClass: "team",
         pricePerSeat: 30,
         minSeats: 2,
         bestForTeamSize: [4, 40],
@@ -344,6 +382,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "enterprise",
         name: "Enterprise",
         billingModel: "per_seat",
+        tierClass: "enterprise",
         pricePerSeat: 45,
         minSeats: 10,
         bestForTeamSize: [20, 500],
@@ -365,6 +404,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "premium",
         name: "Premium",
         billingModel: "per_seat",
+        tierClass: "individual",
         pricePerSeat: 20,
         bestForTeamSize: [1, 5],
         bestForUseCases: ["coding", "mixed"],
@@ -373,6 +413,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "team",
         name: "Team",
         billingModel: "per_seat",
+        tierClass: "team",
         pricePerSeat: 30,
         minSeats: 2,
         bestForTeamSize: [3, 30],
@@ -382,6 +423,7 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
         id: "enterprise",
         name: "Enterprise",
         billingModel: "per_seat",
+        tierClass: "enterprise",
         pricePerSeat: 50,
         minSeats: 10,
         bestForTeamSize: [15, 500],
@@ -389,44 +431,3 @@ export const TOOL_PRICING: Record<SupportedToolId, ToolPricing> = {
     ],
   },
 };
-
-export const SUPPORTED_TOOLS_LIST = Object.values(TOOL_PRICING);
-
-export function getToolPricing(toolId: SupportedToolId): ToolPricing {
-  return TOOL_PRICING[toolId];
-}
-
-export function normalizePlanName(
-  toolId: SupportedToolId,
-  rawPlan: string
-): string {
-  const key = rawPlan.trim().toLowerCase().replace(/[^a-z0-9]+/g, "_");
-  const pricing = TOOL_PRICING[toolId];
-  return pricing.planAliases[key] ?? key;
-}
-
-export function estimateTierMonthlyCost(
-  tier: PricingTier,
-  seats: number
-): number {
-  if (tier.billingModel === "flat") {
-    return tier.monthlyBase ?? 0;
-  }
-  if (tier.billingModel === "per_seat") {
-    const effectiveSeats = Math.max(seats, tier.minSeats ?? 1);
-    return (tier.pricePerSeat ?? 0) * effectiveSeats;
-  }
-  if (tier.typicalMonthlyRange) {
-    const [low, high] = tier.typicalMonthlyRange;
-    return Math.round((low + high) / 2);
-  }
-  return 0;
-}
-
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(amount);
-}

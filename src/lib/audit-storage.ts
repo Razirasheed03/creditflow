@@ -1,3 +1,4 @@
+import { migrateAuditFormValues } from "@/lib/audit-schema";
 import type { AuditFormValues, AuditResult } from "@/types/audit";
 
 const DRAFT_KEY = "creditflow_audit_draft";
@@ -13,7 +14,8 @@ export function loadAuditDraft(): AuditFormValues | null {
   try {
     const raw = window.localStorage.getItem(DRAFT_KEY);
     if (!raw) return null;
-    return JSON.parse(raw) as AuditFormValues;
+    const parsed = JSON.parse(raw) as AuditFormValues;
+    return migrateAuditFormValues(parsed);
   } catch {
     return null;
   }

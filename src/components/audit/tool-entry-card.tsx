@@ -1,11 +1,14 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
+import { useEffect, useMemo } from "react";
 import {
   type Control,
   Controller,
   type FieldErrors,
   type UseFormRegister,
+  type UseFormSetValue,
+  useWatch,
 } from "react-hook-form";
 
 import { FormField } from "@/components/audit/form-field";
@@ -18,9 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SUPPORTED_TOOLS_LIST } from "@/data/pricing";
+import {
+  getDefaultPlanTierId,
+  getPlanOptionsForTool,
+  SUPPORTED_TOOLS_LIST,
+} from "@/data/pricing";
 import type { AuditFormSchema } from "@/lib/audit-schema";
 import { PRIMARY_USE_CASES } from "@/types/audit";
+import type { SupportedToolId } from "@/types/audit";
 
 type ToolEntryErrors = NonNullable<
   FieldErrors<AuditFormSchema>["tools"]
@@ -38,6 +46,7 @@ type ToolEntryCardProps = {
   index: number;
   control: Control<AuditFormSchema>;
   register: UseFormRegister<AuditFormSchema>;
+  setValue: UseFormSetValue<AuditFormSchema>;
   errors?: ToolEntryErrors;
   onRemove: () => void;
   canRemove: boolean;
@@ -47,11 +56,36 @@ export function ToolEntryCard({
   index,
   control,
   register,
+  setValue,
   errors,
   onRemove,
   canRemove,
 }: ToolEntryCardProps) {
   const toolErrors = errors;
+  const toolId = useWatch({
+    control,
+    name: `tools.${index}.toolId`,
+  }) as SupportedToolId;
+
+  const planTierId = useWatch({
+    control,
+    name: `tools.${index}.planTierId`,
+  });
+
+  const planOptions = useMemo(
+    () => getPlanOptionsForTool(toolId ?? "cursor"),
+    [toolId]
+  );
+
+  useEffect(() => {
+    if (!toolId) return;
+    const valid = planOptions.some((o) => o.value === planTierId);
+    if (!valid) {
+      setValue(`tools.${index}.planTierId`, getDefaultPlanTierId(toolId), {
+        shouldValidate: true,
+      });
+    }
+  }, [toolId, planOptions, planTierId, index, setValue]);
 
   return (
     <div className="rounded-2xl border border-neutral-200/90 bg-card p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.04)] sm:p-8">
@@ -79,7 +113,17 @@ export function ToolEntryCard({
             control={control}
             name={`tools.${index}.toolId`}
             render={({ field }) => (
-              <Select value={field.value} onValueChange={field.onChange}>
+              <Select
+                value={field.value}
+                onValueChange={(value) => {
+                  field.onChange(value);
+                  setValue(
+                    `tools.${index}.planTierId`,
+                    getDefaultPlanTierId(value as SupportedToolId),
+                    { shouldValidate: true }
+                  );
+                }}
+              >
                 <SelectTrigger className="h-11 w-full bg-white">
                   <SelectValue placeholder="Select tool" />
                 </SelectTrigger>
@@ -97,37 +141,55 @@ export function ToolEntryCard({
 
         <FormField
           label="Current plan"
-          error={toolErrors?.currentPlan?.message}
+          error={toolErrors?.planTierId?.message}
         >
-          <Input
-            className="h-11 bg-white"
-            placeholder="e.g. Business, Team, Pro"
-            {...register(`tools.${index}.currentPlan`)}
+          <Controller
+            control={control}
+            name={`tools.${index}.planTierId`}
+            render={({ field }) => (
+              <Select value={field.value} onValueChange={field.onChange}>
+                <SelectTrigger className="h-11 w-full bg-white">
+                  <SelectValue placeholder="Select plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {planOptions.map((plan) => (
+                    <SelectItem key={plan.value} value={plan.value}>
+                      {plan.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           />
         </FormField>
 
         <FormField
           label="Monthly spend (USD)"
           error={toolErrors?.monthlySpend?.message}
+          hint="From your latest invoice or billing dashboard"
         >
           <Input
             type="number"
-            min={0}
+            min={1}
             step={1}
             className="h-11 bg-white"
             placeholder="2400"
-            {...register(`tools.${index}.monthlySpend`, { valueAsNumber: true })}
+            {...register(`tools.${index}.monthlySpend`, {
+              valueAsNumber: true,
+            })}
           />
         </FormField>
 
         <FormField label="Seats" error={toolErrors?.seats?.message}>
           <Input
             type="number"
-            min={0}
+            min={1}
             step={1}
             className="h-11 bg-white"
             placeholder="12"
-            {...register(`tools.${index}.seats`, { valueAsNumber: true })}
+            {...register(`tools.${index}.seats`, {
+              valueAsNumber: true,
+            })}
           />
         </FormField>
 

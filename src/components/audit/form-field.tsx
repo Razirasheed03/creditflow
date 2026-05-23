@@ -25,11 +25,22 @@ export function FormField({
   return (
     <div className={cn("space-y-2", className)}>
       <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
+      <div
+        className={cn(
+          error &&
+            "[&_input]:border-destructive [&_input]:focus-visible:ring-destructive/30 [&_[data-slot=select-trigger]]:border-destructive"
+        )}
+      >
+        {children}
+      </div>
       {hint && !error ? (
         <p className="text-xs text-muted-foreground">{hint}</p>
       ) : null}
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
+      {error ? (
+        <p className="text-xs font-medium text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }

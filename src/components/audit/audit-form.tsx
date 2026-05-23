@@ -16,6 +16,7 @@ import {
   auditFormSchema,
   defaultAuditFormValues,
   defaultToolEntry,
+  migrateAuditFormValues,
   type AuditFormSchema,
 } from "@/lib/audit-schema";
 import {
@@ -28,11 +29,12 @@ export function AuditForm() {
   const router = useRouter();
   const [hydrated, setHydrated] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<AuditFormSchema>({
     resolver: zodResolver(auditFormSchema),
     defaultValues: defaultAuditFormValues(),
-    mode: "onBlur",
+    mode: "onChange",
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -43,7 +45,10 @@ export function AuditForm() {
   useEffect(() => {
     const draft = loadAuditDraft();
     if (draft) {
-      form.reset(draft);
+      const migrated = migrateAuditFormValues(draft);
+      if (migrated) {
+        form.reset(migrated);
+      }
     }
     setHydrated(true);
   }, [form]);
@@ -65,19 +70,33 @@ export function AuditForm() {
   }, [form, hydrated, persistDraft]);
 
   const onSubmit = form.handleSubmit(async (values) => {
+    setSubmitError(null);
     setIsSubmitting(true);
     try {
       const result = runAudit(values);
+      if (result.invalidToolCount > 0) {
+        setSubmitError(
+          "Some tools could not be validated. Fix plan selections and try again."
+        );
+        return;
+      }
       saveAuditResults(result);
       router.push("/results");
+    } catch {
+      setSubmitError(
+        "Something went wrong while running the audit. Check your inputs and try again."
+      );
     } finally {
       setIsSubmitting(false);
     }
   });
 
+  const { isValid, isDirty } = form.formState;
+  const canSubmit = isValid && (isDirty || hydrated);
+
   if (!hydrated) {
     return (
-      <div className="space-y-6 animate-pulse">
+      <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading form">
         <div className="h-32 rounded-2xl bg-muted" />
         <div className="h-64 rounded-2xl bg-muted" />
         <div className="h-64 rounded-2xl bg-muted" />
@@ -88,7 +107,7 @@ export function AuditForm() {
   const toolErrors = form.formState.errors.tools;
 
   return (
-    <form onSubmit={onSubmit} className="space-y-8">
+    <form onSubmit={onSubmit} className="space-y-8" noValidate>
       <PlanCard className="p-6 sm:p-8">
         <h2 className="text-xl font-bold tracking-tight">Team context</h2>
         <p className="mt-2 text-sm text-muted-foreground">
@@ -130,7 +149,7 @@ export function AuditForm() {
         </div>
 
         {form.formState.errors.tools?.message ? (
-          <p className="text-sm text-destructive">
+          <p className="text-sm font-medium text-destructive" role="alert">
             {form.formState.errors.tools.message}
           </p>
         ) : null}
@@ -141,6 +160,7 @@ export function AuditForm() {
             index={index}
             control={form.control}
             register={form.register}
+            setValue={form.setValue}
             errors={
               Array.isArray(toolErrors) ? toolErrors[index] : undefined
             }
@@ -150,11 +170,17 @@ export function AuditForm() {
         ))}
       </div>
 
+      {submitError ? (
+        <p className="text-sm font-medium text-destructive" role="alert">
+          {submitError}
+        </p>
+      ) : null}
+
       <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:justify-end">
         <Button
           type="submit"
-          disabled={isSubmitting}
-          className="h-14 rounded-xl bg-neutral-900 px-10 text-lg font-semibold text-white hover:bg-neutral-800"
+          disabled={isSubmitting || !canSubmit}
+          className="h-14 rounded-xl bg-neutral-900 px-10 text-lg font-semibold text-white hover:bg-neutral-800 disabled:opacity-50"
         >
           {isSubmitting ? (
             <>
@@ -166,6 +192,12 @@ export function AuditForm() {
           )}
         </Button>
       </div>
+      {!canSubmit && !isSubmitting ? (
+        <p className="text-right text-xs text-muted-foreground">
+          Complete all required fields with valid plans and spend above $0 to run
+          the audit.
+        </p>
+      ) : null}
     </form>
   );
 }
