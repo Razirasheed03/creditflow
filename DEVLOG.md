@@ -50,3 +50,19 @@ Still refining how opinionated the optimization recommendations should be for mi
 **Plan for tomorrow:**  
 Focus on production polish, responsiveness, UX refinement, accessibility improvements, and preparing the app for backend integration and lead capture flow.
 
+
+## Day 4 — 2026-05-24
+
+**Hours worked:** 6
+
+**What I did:**  
+Implemented the backend audit workflow using Supabase, including audit persistence, public shareable reports, lead capture flow, and share link generation.
+
+**What I learned:**  
+Learned more about Supabase integration, API persistence flow, and backend debugging workflows.
+
+**Blockers / what I'm stuck on:**  
+Faced multiple Supabase integration issues related to environment configuration, RLS, and database schema mismatches.
+
+**Plan for tomorrow:**  
+Complete Resend email integration, improve testing/responsiveness, and prepare deployment/docs.
