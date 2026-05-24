@@ -11,6 +11,7 @@ import { ToolEntryCard } from "@/components/audit/tool-entry-card";
 import { PlanCard } from "@/components/homepage/primitives";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { persistAuditToServer } from "@/lib/audits/api-client";
 import { runAudit } from "@/lib/audit-engine";
 import {
   auditFormSchema,
@@ -22,7 +23,9 @@ import {
 import {
   loadAuditDraft,
   saveAuditDraft,
+  saveAuditInput,
   saveAuditResults,
+  saveShareId,
 } from "@/lib/audit-storage";
 
 export function AuditForm() {
@@ -81,7 +84,25 @@ export function AuditForm() {
         return;
       }
       saveAuditResults(result);
-      router.push("/results");
+      saveAuditInput(values);
+
+      try {
+        const { shareId } = await persistAuditToServer({
+          auditData: values,
+          resultData: result,
+        });
+        saveShareId(shareId);
+        router.push(`/results?share=${encodeURIComponent(shareId)}`);
+      } catch (persistError) {
+        const message =
+          persistError instanceof Error
+            ? persistError.message
+            : "Failed to save audit to the server";
+        setSubmitError(
+          `Audit completed locally, but cloud save failed: ${message}. Fix .env.local (see terminal), restart dev server, then try again.`
+        );
+        router.push("/results");
+      }
     } catch {
       setSubmitError(
         "Something went wrong while running the audit. Check your inputs and try again."
