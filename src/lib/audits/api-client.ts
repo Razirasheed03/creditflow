@@ -7,6 +7,7 @@ export type LeadCaptureResponse = {
   ok: boolean;
   emailSent?: boolean;
   emailStatus?: string;
+  emailMessage?: string;
 };
 
 export async function persistAuditToServer(input: {

@@ -17,7 +17,6 @@ const leadFormSchema = z.object({
   email: z.string().email("Enter a valid work email"),
   companyName: z.string().max(120).optional(),
   role: z.string().max(80).optional(),
-  website: z.string().optional(),
 });
 
 type LeadFormValues = z.infer<typeof leadFormSchema>;
@@ -29,17 +28,17 @@ type LeadCaptureSectionProps = {
 export function LeadCaptureSection({ shareId }: LeadCaptureSectionProps) {
   const [submitted, setSubmitted] = useState(() => hasSubmittedLead(shareId));
   const [emailSent, setEmailSent] = useState<boolean | null>(null);
+  const [emailStatus, setEmailStatus] = useState<string | null>(null);
+  const [emailMessage, setEmailMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<LeadFormValues>({
     resolver: zodResolver(leadFormSchema),
-    defaultValues: { email: "", companyName: "", role: "", website: "" },
+    defaultValues: { email: "", companyName: "", role: "" },
     mode: "onBlur",
   });
 
   const onSubmit = form.handleSubmit(async (values) => {
-    if (values.website?.trim()) return;
-
     setError(null);
     try {
       const result = await submitLeadCapture({
@@ -51,11 +50,15 @@ export function LeadCaptureSection({ shareId }: LeadCaptureSectionProps) {
       markLeadSubmitted(shareId);
       setSubmitted(true);
       setEmailSent(result.emailSent ?? false);
+      setEmailStatus(result.emailStatus ?? null);
+      setEmailMessage(result.emailMessage ?? null);
     } catch {
       setError(
         "We couldn't save your details right now. Please try again in a moment."
       );
     }
+  }, () => {
+    setError("Enter a valid work email to receive your report.");
   });
 
   if (submitted) {
@@ -67,8 +70,13 @@ export function LeadCaptureSection({ shareId }: LeadCaptureSectionProps) {
         <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
           {emailSent
             ? "We've emailed your audit summary with savings highlights and a link to your shareable report."
-            : "Your details are saved. Share your report link above with finance or engineering leads."}
+            : "Your details are saved, but the email was not delivered. Share your report link above with finance or engineering leads while you fix the sender configuration."}
         </p>
+        {!emailSent && emailStatus === "failed" && emailMessage ? (
+          <p className="mt-3 text-sm font-medium text-destructive" role="alert">
+            Email send failed: {emailMessage}
+          </p>
+        ) : null}
       </PlanCard>
     );
   }
@@ -95,15 +103,6 @@ export function LeadCaptureSection({ shareId }: LeadCaptureSectionProps) {
       </div>
 
       <form onSubmit={onSubmit} className="mt-8 space-y-5" noValidate>
-        <input
-          type="text"
-          tabIndex={-1}
-          autoComplete="off"
-          className="absolute left-[-9999px] h-0 w-0 opacity-0"
-          aria-hidden
-          {...form.register("website")}
-        />
-
         <div className="grid gap-5 sm:grid-cols-2">
           <FormField
             label="Work email"
