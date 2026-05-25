@@ -66,3 +66,19 @@ Faced multiple Supabase integration issues related to environment configuration,
 
 **Plan for tomorrow:**  
 Complete Resend email integration, improve testing/responsiveness, and prepare deployment/docs.
+
+## Day 5 — 2026-05-25
+
+**Hours worked:** 2
+
+**What I did:**  
+Completed the transactional email workflow using Resend, improved lead capture handling, and finalized the shareable audit report flow with Supabase persistence.
+
+**What I learned:**  
+Learned more about Resend email workflows, sender restrictions, and production email configuration requirements.
+
+**Blockers / what I'm stuck on:**  
+Faced Resend testing limitations for unverified domains while testing external email delivery.
+
+**Plan for tomorrow:**  
+Improve responsiveness, finalize deployment preparation, and complete documentation/testing.
