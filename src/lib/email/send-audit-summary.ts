@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { BrevoClient } from "@getbrevo/brevo";
 
 import type { AuditRow } from "@/types/database";
 
@@ -21,15 +21,17 @@ export type SendAuditEmailResult =
 export async function sendAuditSummaryEmail(
   row: AuditRow
 ): Promise<SendAuditEmailResult> {
-  const apiKey = process.env.RESEND_API_KEY?.trim();
-  const from = process.env.RESEND_FROM_EMAIL?.trim();
+  const apiKey = process.env.BREVO_API_KEY?.trim();
+  const fromName = process.env.BREVO_SENDER_NAME?.trim();
+  const fromEmail = process.env.BREVO_SENDER_EMAIL?.trim();
   const to = row.email?.trim();
 
-  if (!apiKey || !from) {
+  if (!apiKey || !fromName || !fromEmail) {
     logEmailEvent("skipped_not_configured", {
       shareId: row.share_id,
       hasApiKey: Boolean(apiKey),
-      hasFrom: Boolean(from),
+      hasFromName: Boolean(fromName),
+      hasFromEmail: Boolean(fromEmail),
     });
     return { ok: false, reason: "not_configured" };
   }
@@ -42,54 +44,67 @@ export async function sendAuditSummaryEmail(
   }
 
   const { subject, html, text } = buildAuditSummaryEmail(row);
-  const resend = new Resend(apiKey);
+  const brevo = new BrevoClient({
+    apiKey,
+    timeoutInSeconds: 30,
+    maxRetries: 2,
+  });
 
   try {
     logEmailEvent("send_attempt", {
       shareId: row.share_id,
       to,
-      from,
+      from: `${fromName} <${fromEmail}>`,
       subject,
       annualSavings: row.estimated_savings.annual,
     });
 
-    const { data, error } = await resend.emails.send({
-      from,
-      to,
+    const response = await brevo.transactionalEmails.sendTransacEmail({
       subject,
-      html,
-      text,
+      htmlContent: html,
+      textContent: text,
+      sender: {
+        name: fromName,
+        email: fromEmail,
+      },
+      to: [{ email: to }],
     });
 
-    if (error || !data?.id) {
-      logEmailEvent("send_error", {
-        shareId: row.share_id,
-        to,
-        message: error?.message ?? "Resend rejected the email",
-      });
-      return {
-        ok: false,
-        reason: "send_failed",
-        message: error?.message ?? "Resend rejected the email",
-      };
-    }
-
+    const providerResponse =
+      response && typeof response === "object"
+        ? JSON.parse(JSON.stringify(response))
+        : response;
     logEmailEvent("send_success", {
       shareId: row.share_id,
       to,
-      resendId: data.id,
+      providerResponse,
     });
-    return { ok: true, id: data.id };
+
+    const id =
+      typeof providerResponse === "object" &&
+      providerResponse !== null &&
+      "messageId" in providerResponse
+        ? String((providerResponse as { messageId?: unknown }).messageId ?? "")
+        : "";
+
+    return { ok: true, id: id || "brevo_sent" };
   } catch (err) {
+    const message =
+      err instanceof Error ? err.message : "Unknown email error";
+    const details =
+      err && typeof err === "object"
+        ? JSON.parse(JSON.stringify(err))
+        : undefined;
     logEmailEvent("send_exception", {
       shareId: row.share_id,
       to,
-      message: err instanceof Error ? err.message : "Unknown email error",
+      message,
+      details,
     });
     return {
       ok: false,
       reason: "send_failed",
-      message: err instanceof Error ? err.message : "Unknown email error",
+      message,
     };
   }
 }
