@@ -10,7 +10,7 @@ import {
   Share2,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 
 import { PlanCard } from "@/components/homepage/primitives";
 import { Button } from "@/components/ui/button";
@@ -30,12 +30,28 @@ function buildShareText(annualSavings?: number): string {
   return `Saved $${Math.round(annualSavings).toLocaleString("en-US")}/year on AI tooling with CreditFlow`;
 }
 
+function getCanNativeShare(): boolean {
+  return (
+    typeof navigator !== "undefined" && typeof navigator.share === "function"
+  );
+}
+
+function subscribeToNativeShareAvailability(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+  onStoreChange();
+  return () => {};
+}
+
 export function ShareReportActions({
   shareId,
   annualSavings,
 }: ShareReportActionsProps) {
   const [feedback, setFeedback] = useState<ShareFeedback>(null);
-  const [canNativeShare, setCanNativeShare] = useState(false);
+  const canNativeShare = useSyncExternalStore(
+    subscribeToNativeShareAvailability,
+    getCanNativeShare,
+    () => false
+  );
   const shareUrl = getPublicShareUrl(shareId);
   const shareText = buildShareText(annualSavings);
   const shareTextWithUrl = `${shareText} ${shareUrl}`;
@@ -48,12 +64,6 @@ export function ShareReportActions({
   const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(
     shareTextWithUrl
   )}`;
-
-  useEffect(() => {
-    setCanNativeShare(
-      typeof navigator !== "undefined" && typeof navigator.share === "function"
-    );
-  }, []);
 
   const clearFeedbackSoon = useCallback(() => {
     window.setTimeout(() => setFeedback(null), 2500);

@@ -3,8 +3,8 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 
 import { FormField } from "@/components/audit/form-field";
 import { ToolEntryCard } from "@/components/audit/tool-entry-card";
@@ -28,9 +28,27 @@ import {
   saveShareId,
 } from "@/lib/audit-storage";
 
+function subscribeToClientMount() {
+  return () => {};
+}
+
+function getClientMountedSnapshot() {
+  return true;
+}
+
+function getServerMountedSnapshot() {
+  return false;
+}
+
 export function AuditForm() {
   const router = useRouter();
-  const [hydrated, setHydrated] = useState(false);
+  const mounted = useSyncExternalStore(
+    subscribeToClientMount,
+    getClientMountedSnapshot,
+    getServerMountedSnapshot
+  );
+  const draftAppliedRef = useRef(false);
+  const skipNextDraftSaveRef = useRef(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
@@ -45,7 +63,13 @@ export function AuditForm() {
     name: "tools",
   });
 
+  const watchedValues = useWatch({ control: form.control }) as
+    | AuditFormSchema
+    | undefined;
+
   useEffect(() => {
+    if (!mounted || draftAppliedRef.current) return;
+    draftAppliedRef.current = true;
     const draft = loadAuditDraft();
     if (draft) {
       const migrated = migrateAuditFormValues(draft);
@@ -53,24 +77,16 @@ export function AuditForm() {
         form.reset(migrated);
       }
     }
-    setHydrated(true);
-  }, [form]);
-
-  const persistDraft = useCallback(
-    (values: AuditFormSchema) => {
-      if (!hydrated) return;
-      saveAuditDraft(values);
-    },
-    [hydrated]
-  );
+  }, [mounted, form]);
 
   useEffect(() => {
-    if (!hydrated) return;
-    const subscription = form.watch((values) => {
-      persistDraft(values as AuditFormSchema);
-    });
-    return () => subscription.unsubscribe();
-  }, [form, hydrated, persistDraft]);
+    if (!mounted || !watchedValues) return;
+    if (skipNextDraftSaveRef.current) {
+      skipNextDraftSaveRef.current = false;
+      return;
+    }
+    saveAuditDraft(watchedValues);
+  }, [mounted, watchedValues]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setSubmitError(null);
@@ -112,10 +128,10 @@ export function AuditForm() {
     }
   });
 
-  const { isValid, isDirty } = form.formState;
-  const canSubmit = isValid && (isDirty || hydrated);
+  const { isValid } = form.formState;
+  const canSubmit = isValid && mounted;
 
-  if (!hydrated) {
+  if (!mounted) {
     return (
       <div className="space-y-6 animate-pulse" aria-busy="true" aria-label="Loading form">
         <div className="h-32 rounded-2xl bg-muted" />

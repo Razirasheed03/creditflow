@@ -20,22 +20,27 @@ export function AuditAiSummary({ audit }: AuditAiSummaryProps) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadSummary = useCallback(
-    async (refresh = false) => {
-      if (refresh) setRefreshing(true);
-      else setLoading(true);
-
-      const result = await fetchAuditSummary(audit, { refresh });
-      setSummary(result);
-      setLoading(false);
-      setRefreshing(false);
-    },
-    [audit]
-  );
-
   useEffect(() => {
-    void loadSummary(false);
-  }, [loadSummary]);
+    let cancelled = false;
+    void (async () => {
+      const result = await fetchAuditSummary(audit, { refresh: false });
+      if (!cancelled) {
+        setSummary(result);
+        setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [audit]);
+
+  const refreshSummary = useCallback(async () => {
+    setRefreshing(true);
+    const result = await fetchAuditSummary(audit, { refresh: true });
+    setSummary(result);
+    setLoading(false);
+    setRefreshing(false);
+  }, [audit]);
 
   return (
     <PlanCard
@@ -89,7 +94,7 @@ export function AuditAiSummary({ audit }: AuditAiSummaryProps) {
           size="sm"
           className="h-9 shrink-0 rounded-lg border-neutral-200 bg-white"
           disabled={loading || refreshing}
-          onClick={() => void loadSummary(true)}
+          onClick={() => void refreshSummary()}
         >
           {refreshing ? "Refreshing…" : "Refresh summary"}
         </Button>
