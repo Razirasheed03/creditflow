@@ -10,7 +10,6 @@ Demo video: https://youtu.be/LPFzV2b-xyA
 
 ## Screenshots
 
-> Placeholders—swap these for real images captured from your deployment.
 
 ![Audit form](./docs/screenshots/audit-form.png)
 
