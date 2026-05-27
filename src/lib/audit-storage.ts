@@ -2,6 +2,7 @@ import {
   migrateAuditFormValues,
   type AuditFormSchema,
 } from "@/lib/audit-schema";
+import { getPublicShareUrl } from "@/lib/share/share-url";
 import type { AuditFormValues, AuditResult } from "@/types/audit";
 
 const DRAFT_KEY = "creditflow_audit_draft";
@@ -84,10 +85,7 @@ export function hasSubmittedLead(shareId: string): boolean {
   return window.localStorage.getItem(LEAD_SUBMITTED_KEY) === shareId;
 }
 
+/** @deprecated Use `getPublicShareUrl` from `@/lib/share/share-url`. */
 export function getShareUrl(shareId: string): string {
-  if (typeof window === "undefined") {
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? "";
-    return `${base}/share/${shareId}`;
-  }
-  return `${window.location.origin}/share/${shareId}`;
+  return getPublicShareUrl(shareId);
 }

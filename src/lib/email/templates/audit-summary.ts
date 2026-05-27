@@ -1,12 +1,7 @@
 import { formatCurrency } from "@/data/pricing";
+import { getAppOrigin } from "@/lib/share/app-origin";
+import { getSharePath } from "@/lib/share/share-url";
 import type { AuditRow } from "@/types/database";
-
-function appOrigin(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-    "https://creditflow.app"
-  );
-}
 
 export function buildAuditSummaryEmail(row: AuditRow): {
   subject: string;
@@ -15,8 +10,9 @@ export function buildAuditSummaryEmail(row: AuditRow): {
 } {
   const result = row.result_data;
   const savings = row.estimated_savings;
-  const shareUrl = `${appOrigin()}/share/${row.share_id}`;
-  const auditUrl = `${appOrigin()}/audit`;
+  const origin = getAppOrigin();
+  const shareUrl = `${origin}${getSharePath(row.share_id)}`;
+  const auditUrl = `${origin}/audit`;
 
   const annualLabel = result.isAlreadyOptimized
     ? "Your stack looks well-optimized"
