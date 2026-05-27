@@ -14,8 +14,9 @@ export function getPublicShareUrl(shareId: string): string {
   const configured = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
 
   if (typeof window !== "undefined") {
-    if (process.env.NODE_ENV === "production" && configured) {
-      return `${configured}${path}`;
+    if (process.env.NODE_ENV === "production") {
+      const origin = configured ?? getAppOrigin();
+      return `${origin}${path}`;
     }
     return `${window.location.origin}${path}`;
   }

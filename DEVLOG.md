@@ -82,3 +82,27 @@ Faced Resend testing limitations for unverified domains while testing external e
 
 **Plan for tomorrow:**  
 Improve responsiveness, finalize deployment preparation, and complete documentation/testing.
+
+## Day 6 — 2026-05-26
+
+**Hours worked:** 3
+
+**What I did:** Migrated the email flow from Resend to Brevo, configured Brevo API integration, fixed IP authorization issues, and verified transactional email delivery from the audit flow.
+
+**What I learned:** Revised Brevo SMTP/API integration workflow and authorization setup.
+
+**Blockers / what I'm stuck on:** Forgot to push the Day 6 DEVLOG along with the Brevo integration commit, but the implementation work was completed and pushed.
+
+**Plan for tomorrow:** Finalize Open Graph/share preview testing, final QA, cleanup, and submission polish.
+
+
+## Day 7 — 2026-05-27
+**Hours worked:** 6
+
+**What I did:** Finalized project documentation including architecture, prompts, metrics, economics, GTM, and user interview notes. Cleaned up overly AI-generated wording across docs, improved production readiness, polished share/report flows, and prepared the project for final submission.
+
+**What I learned:** Learned more about writing practical technical documentation and presenting engineering decisions more clearly.
+
+**Blockers / what I'm stuck on:** Mostly final polish and making the documentation feel practical instead of over-written.
+
+**Plan for tomorrow:** Last day of work.

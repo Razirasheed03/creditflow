@@ -1,6 +1,7 @@
 import { ArrowRight, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { DEMO_VIDEO_URL } from "@/lib/demo-link";
 import { cn } from "@/lib/utils";
 
 const primaryClass =
@@ -42,7 +43,11 @@ export function CtaButtons({ variant = "light", className }: CtaButtonsProps) {
         className={cn(isDark ? secondaryOnDarkClass : secondaryClass)}
         asChild
       >
-        <a href="/results?demo=1">
+        <a
+          href={DEMO_VIDEO_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Play className="size-5" aria-hidden />
           See Demo
         </a>

@@ -4,6 +4,8 @@ CreditFlow helps teams run an engine-verified “AI spend audit” against their
 
 Deployed URL: https://creditflow-audit.vercel.app
 
+Demo video: https://youtu.be/LPFzV2b-xyA
+
 ---
 
 ## Screenshots
@@ -13,6 +15,11 @@ Deployed URL: https://creditflow-audit.vercel.app
 ![Audit form](./docs/screenshots/audit-form.png)
 
 ![Results dashboard](./docs/screenshots/results-dashboard.png)
+
+
+![Results dashboard](./docs/screenshots/result-dashboard-second.png)
+
+![Results dashboard](./docs/screenshots/recommended-changes.png)
 
 ![Public share report](./docs/screenshots/public-share-report.png)
 
@@ -29,6 +36,8 @@ npm run dev
 ```
 
 Then open `http://localhost:3000` and run an audit to generate a `/share/[id]` link.
+
+Or watch the [product demo walkthrough](https://youtu.be/LPFzV2b-xyA) on YouTube.
 
 ---
 
@@ -127,18 +136,6 @@ Create a `.env.local` based on `.env.example`:
 
 ---
 
-## Missing Information (Manual Input Needed)
 
-I could not find the referenced Credex assignment PDF in this repository (no `.pdf` files are present under the workspace). If you upload the PDF (or paste the requirement text), I can update this README to match the assignment rubric line-by-line and ensure no requirement is missed.
 
----
-
-## Manual Testing Notes (Social Previews)
-
-See `docs/share-preview-testing.md` for concrete validator steps:
-
-- Twitter Card Validator
-- LinkedIn Post Inspector
-- Discord/Slack unfurl testing
-- WhatsApp link preview testing
 

@@ -1,12 +1,14 @@
 import Link from "next/link";
 
 import { LogoMark } from "@/components/homepage/primitives";
+import { DEMO_VIDEO_URL } from "@/lib/demo-link";
 
 const footerLinks = {
   Product: [
     { label: "How it works", href: "#how-it-works" },
     { label: "Features", href: "#features" },
     { label: "Savings preview", href: "#savings" },
+    { label: "Demo video", href: DEMO_VIDEO_URL, external: true },
   ],
   Company: [
     { label: "About", href: "#" },
@@ -46,6 +48,9 @@ export function Footer() {
                   <li key={link.label}>
                     <a
                       href={link.href}
+                      {...("external" in link && link.external
+                        ? { target: "_blank", rel: "noopener noreferrer" }
+                        : {})}
                       className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                     >
                       {link.label}

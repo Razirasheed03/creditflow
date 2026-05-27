@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { LogoMark } from "@/components/homepage/primitives";
+import { DEMO_VIDEO_URL } from "@/lib/demo-link";
 
 const navLinks = [
   { label: "How it works", href: "#how-it-works" },
@@ -40,7 +41,9 @@ export function Header() {
 
         <div className="flex items-center justify-end gap-5">
           <a
-            href="#demo"
+            href={DEMO_VIDEO_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="hidden text-base font-medium text-muted-foreground transition-colors hover:text-foreground sm:inline"
           >
             See demo

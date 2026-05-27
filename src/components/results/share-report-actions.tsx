@@ -1,6 +1,14 @@
 "use client";
 
-import { Check, Copy, ExternalLink, Link2, Share2 } from "lucide-react";
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Globe2,
+  Link2,
+  MessageCircle,
+  Share2,
+} from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
@@ -10,14 +18,36 @@ import { getPublicShareUrl } from "@/lib/share/share-url";
 
 type ShareReportActionsProps = {
   shareId: string;
+  annualSavings?: number;
 };
 
 type ShareFeedback = "copied" | "shared" | null;
 
-export function ShareReportActions({ shareId }: ShareReportActionsProps) {
+function buildShareText(annualSavings?: number): string {
+  if (!annualSavings || annualSavings <= 0) {
+    return "AI Spend Audit by CreditFlow";
+  }
+  return `Saved $${Math.round(annualSavings).toLocaleString("en-US")}/year on AI tooling with CreditFlow`;
+}
+
+export function ShareReportActions({
+  shareId,
+  annualSavings,
+}: ShareReportActionsProps) {
   const [feedback, setFeedback] = useState<ShareFeedback>(null);
   const [canNativeShare, setCanNativeShare] = useState(false);
   const shareUrl = getPublicShareUrl(shareId);
+  const shareText = buildShareText(annualSavings);
+  const shareTextWithUrl = `${shareText} ${shareUrl}`;
+  const twitterShareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(
+    shareText
+  )}&url=${encodeURIComponent(shareUrl)}`;
+  const linkedInShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+    shareUrl
+  )}`;
+  const whatsappShareUrl = `https://wa.me/?text=${encodeURIComponent(
+    shareTextWithUrl
+  )}`;
 
   useEffect(() => {
     setCanNativeShare(
@@ -44,7 +74,7 @@ export function ShareReportActions({ shareId }: ShareReportActionsProps) {
     try {
       await navigator.share({
         title: "CreditFlow AI Spend Audit",
-        text: "Engine-verified AI spend audit — savings, recommendations, and plan breakdowns.",
+        text: shareText,
         url: shareUrl,
       });
       setFeedback("shared");
@@ -53,7 +83,7 @@ export function ShareReportActions({ shareId }: ShareReportActionsProps) {
       if (error instanceof Error && error.name === "AbortError") return;
       await copyLink();
     }
-  }, [shareUrl, clearFeedbackSoon, copyLink]);
+  }, [shareText, shareUrl, clearFeedbackSoon, copyLink]);
 
   return (
     <PlanCard className="p-6 sm:p-8">
@@ -66,6 +96,7 @@ export function ShareReportActions({ shareId }: ShareReportActionsProps) {
         LinkedIn, Slack, Discord, and WhatsApp — contact details are never
         included.
       </p>
+      <p className="mt-2 text-sm font-medium text-foreground/80">{shareText}</p>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
         <div
@@ -120,6 +151,57 @@ export function ShareReportActions({ shareId }: ShareReportActionsProps) {
             </Link>
           </Button>
         </div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 rounded-xl border-neutral-200 bg-white hover:bg-muted/50"
+          asChild
+        >
+          <Link
+            href={twitterShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Share this audit on X"
+          >
+            <Share2 className="size-4" aria-hidden />
+            Share on X
+          </Link>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 rounded-xl border-neutral-200 bg-white hover:bg-muted/50"
+          asChild
+        >
+          <Link
+            href={linkedInShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Share this audit on LinkedIn"
+          >
+            <Globe2 className="size-4" aria-hidden />
+            Share on LinkedIn
+          </Link>
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="h-10 rounded-xl border-neutral-200 bg-white hover:bg-muted/50"
+          asChild
+        >
+          <Link
+            href={whatsappShareUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Share this audit on WhatsApp"
+          >
+            <MessageCircle className="size-4" aria-hidden />
+            Share on WhatsApp
+          </Link>
+        </Button>
       </div>
 
       {feedback ? (

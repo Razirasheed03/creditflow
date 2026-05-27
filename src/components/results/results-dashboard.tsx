@@ -11,7 +11,7 @@ import { ShareReportActions } from "@/components/results/share-report-actions";
 import { PlanCard } from "@/components/homepage/primitives";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { buildDemoAuditForm, buildDemoAuditResult } from "@/lib/audit-demo";
+import { buildDemoAuditResult } from "@/lib/audit-demo";
 import { persistAuditToServer } from "@/lib/audits/api-client";
 import {
   loadAuditInput,
@@ -36,6 +36,7 @@ function ResultsSkeleton() {
 export function ResultsDashboard() {
   const [result, setResult] = useState<AuditResult | null>(null);
   const [shareId, setShareId] = useState<string | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const [persistError, setPersistError] = useState<string | null>(null);
 
@@ -46,23 +47,12 @@ export function ResultsDashboard() {
     const storedShare = loadShareId();
 
     const init = async () => {
-      if (!stored && params.get("demo") === "1") {
+      if (params.get("demo") === "1") {
+        setIsDemoMode(true);
         const demoResult = buildDemoAuditResult();
         saveAuditResults(demoResult);
-        try {
-          const { shareId: created } = await persistAuditToServer({
-            auditData: buildDemoAuditForm(),
-            resultData: demoResult,
-          });
-          saveShareId(created);
-          setShareId(created);
-        } catch (err) {
-          setShareId(null);
-          setPersistError(
-            err instanceof Error ? err.message : "Demo audit could not be saved"
-          );
-        }
         setResult(demoResult);
+        setShareId(null);
         setHydrated(true);
         return;
       }
@@ -120,21 +110,43 @@ export function ResultsDashboard() {
 
   return (
     <div className="space-y-10">
+      {isDemoMode ? (
+        <PlanCard className="border-neutral-200 bg-muted/30 p-5 sm:p-6">
+          <p className="text-sm font-semibold text-foreground">Sample audit report</p>
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            This is illustrative data only — no share link or email delivery.
+            Run your own audit to save results, share with your team, and receive
+            a report by email.
+          </p>
+          <Button
+            className="mt-4 h-11 rounded-xl bg-neutral-900 px-6 text-white hover:bg-neutral-800"
+            asChild
+          >
+            <Link href="/audit">Start free audit</Link>
+          </Button>
+        </PlanCard>
+      ) : null}
+
       <AuditResultsView result={result} showAiSummary />
 
-      {!shareId ? (
+      {!isDemoMode && !shareId ? (
         <PersistAuditBanner result={result} onPersisted={setShareId} />
       ) : null}
 
-      {persistError && shareId ? (
+      {persistError && shareId && !isDemoMode ? (
         <p className="text-sm text-muted-foreground" role="status">
           Previous save attempt: {persistError}
         </p>
       ) : null}
 
-      {shareId ? <ShareReportActions shareId={shareId} /> : null}
+      {!isDemoMode && shareId ? (
+        <ShareReportActions
+          shareId={shareId}
+          annualSavings={result.totalAnnualSavings}
+        />
+      ) : null}
 
-      {shareId ? <LeadCaptureSection shareId={shareId} /> : null}
+      {!isDemoMode && shareId ? <LeadCaptureSection shareId={shareId} /> : null}
 
       <div className="flex flex-col gap-3 border-t border-neutral-100 pt-8 sm:flex-row sm:justify-center">
         <Button

@@ -93,8 +93,8 @@ export default async function SharePage({ params }: PageProps) {
             </p>
             <h1 className="mt-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               {isAlreadyOptimized
-                ? "AI spend audit — already optimized"
-                : "AI spend audit — savings opportunities"}
+                ? "AI spend audit - already optimized"
+                : "AI spend audit - savings opportunities"}
             </h1>
             <p className="mt-3 max-w-2xl text-base text-muted-foreground">
               Public view of an engine-verified audit. Contact details and
@@ -114,7 +114,10 @@ export default async function SharePage({ params }: PageProps) {
         <section className="bg-background">
           <div className="mx-auto max-w-6xl space-y-10 px-4 py-12 sm:px-6 sm:py-16">
             <AuditResultsView result={result} showAiSummary={false} />
-            <ShareReportActions shareId={audit.shareId} />
+            <ShareReportActions
+              shareId={audit.shareId}
+              annualSavings={audit.estimatedSavings.annual}
+            />
             <LeadCaptureSection shareId={audit.shareId} />
           </div>
         </section>

@@ -1,9 +1,10 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { BrandIcon, type BrandId } from "@/components/homepage/brand-icon";
 import { PlanCard, PlanRow } from "@/components/homepage/primitives";
 import { SectionHeading } from "@/components/homepage/section-heading";
+import { DEMO_VIDEO_URL } from "@/lib/demo-link";
 
 const audits: {
   tool: string;
@@ -59,15 +60,31 @@ export function SavingsPreview() {
             description="Sample findings from a Series A engineering team."
             className="mx-0 max-w-xl text-left"
           />
-          <Button
-            className="shrink-0 rounded-xl bg-neutral-900 px-5 text-white hover:bg-neutral-800"
-            asChild
-          >
-            <a href="#cta">
-              View sample report
-              <ArrowRight className="size-4" aria-hidden />
-            </a>
-          </Button>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            <Button
+              variant="outline"
+              className="rounded-xl border-neutral-200 bg-white hover:bg-neutral-50"
+              asChild
+            >
+              <a
+                href={DEMO_VIDEO_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Play className="size-4" aria-hidden />
+                Watch demo video
+              </a>
+            </Button>
+            <Button
+              className="rounded-xl bg-neutral-900 px-5 text-white hover:bg-neutral-800"
+              asChild
+            >
+              <a href="/results?demo=1">
+                View sample report
+                <ArrowRight className="size-4" aria-hidden />
+              </a>
+            </Button>
+          </div>
         </div>
 
         <div id="savings" className="mt-12 grid gap-5 lg:grid-cols-3">
